@@ -1,0 +1,40 @@
+@startuml
+skinparam backgroundColor transparent
+skinparam classFontName Sora
+skinparam noteFontName Sora
+
+abstract class User {
+  String givenName
+  String familyName
+  String nickName
+}
+
+class Scout {
+  String ecset
+}
+
+class ActiveScout { }
+
+class Leader { }
+
+class FinancialWorkGroupMember { }
+
+class FinancialOfficer { }
+
+class ExternalUser {
+  String email
+  String password
+}
+
+class Accountant {
+
+}
+
+User  <|-- Scout
+Scout  <|-- ActiveScout
+ActiveScout  <|-- Leader
+Leader  <|-- FinancialWorkGroupMember
+FinancialWorkGroupMember <|-- FinancialOfficer
+User  <|-- ExternalUser
+ExternalUser <|-- Accountant
+@enduml
