@@ -51,9 +51,10 @@ Stored in .NET User Secrets (not in source):
 Defined in `class_diagram.puml`. Key entities:
 
 ### People
-- `Person` (base) → `Scout` → `Administrator`
-- `Person` → `Accountant`
-- `Family` (contains members)
+- `User` (base: givenName, familyName, nickName)
+  - → `Scout` (ecset code, OIDC-only login) → `ActiveScout` → `Leader` (has assignment or workgroup membership) → `FinancialWorkGroupMember` → `FinancialOfficer` (full or financial assignment in ECSET)
+  - → `ExternalUser` (email, password) → `Accountant`
+- `Family` (contains members; auto-detected by name + parent email, manually adjustable)
 - Inheritance mapped via TPH (Table Per Hierarchy) in EF Core
 
 ### Organization
@@ -61,28 +62,28 @@ Defined in `class_diagram.puml`. Key entities:
   - Has leaders, members, parent, children
 
 ### Finance
-- `Transaction` — payer/payee (ITransactable), amount (Money), status, method, dates
-- `BankAccount` — holds transactions
-- `FinancialProject` — links a plan + report + transactions
-- `FinancialPlan` — contains PlanItems and PlanParameters
-- `PlanItem` — name, unitAmount (Money), quantity (formula string), quantityResolved
-- `PlanParameter` — name/value pairs referenced in formulas
-- `TransactionPartner` — external party (name + tax number)
+- `BankTransaction` — értéknap, partner neve, partner számlaszáma, Money (HUF only), közlemény, projekt (required), megjegyzés
+- `CashTransaction` — értéknap, partner neve, Money, közlemény, projekt (required), megjegyzés
+- `Category` — spending category for transactions (e.g. felszerelés, egyenruha, tagdíj). Used for reports/charts.
+- `Invoice` (Számla) — kiállító, leírás, kiállító adószáma, Money, ki fizette ki, megjelenés (e-számla?), számla fájl, beérkezett-e a pénzügyeshez
+- `CardHandover` (Bankkártya-átadás) — dátum, kitől, kihez. Tracks which user holds each team bank card.
+- `PaymentRequest` (Fizetési kérelem) — kitől (projekt/user), kihez (projekt/user), létrehozó, Money, létrehozás időpontja, határidő, leírás, számla (optional), státusz (open/fulfilled/overdue)
+- `Project` (FinancialProject) — név, leírás, pénzügyi felelős(ök), tranzakciók, költségvetés, beszámoló, kezdő/befejező dátum, státusz (létrehozva/terv beadva/terv elfogadva/projekt vége/beszámoló elfogadva), cserkészév
+- `Budget` (Költségvetés) — költségvetési sorok, paraméterek, állapot (szerkesztés alatt/beadva/elfogadva), ellenőrző, díjak. Bevételi+kiadási oldal. Végső mérleg biztonsági tartalékkal és nélkül.
+- `BudgetItem` (Költségvetési sor) — leírás, mennyiség (formula string), Money. Positive = bevétel, negative = kiadás.
+- `BudgetParameter` — leírás, mennyiség. Mandatory parameter: biztonsági tartalék (%). Locked after budget submission.
+- `FeeManagement` (Díjkezelés) — résztvevő kategóriák, résztvevők, résztvevőnkénti egyenleg, díjelemek. Creates PaymentRequests. Incoming transactions auto-matched to participants by közlemény.
+- `StatementExpression` (Közlemény-kifejezés) — pattern matching rule that auto-assigns bank transactions to projects based on közlemény content.
+- `ScoutYear` (Cserkészév) — fiscal year starting September 1. Every Project belongs to one.
+- `BankAccount` — IBAN, linked GoCardless connection
 - `Money` — owned type (amount + currency), embedded in parent tables
-
-### ITransactable Interface
-Implemented by: `Scout`, `FinancialProject`, `TransactionPartner`
-Note: EF Core can't directly map polymorphic navigation across unrelated hierarchies. Transaction uses raw FK integers (`PayerId`/`PayeeId`).
 
 ### Enums
 - `Currency`: HUF, EUR, USD
-- `TransactionStatus`: CREATED, FULFILLED, OVERDUE, PENDING
-- `PaymentMethod`: CASH, BANK_TRANSFER, CARD
-- `MembershipStatus`: ACTIVE, INACTIVE, ALUMNI, CANDIDATE
+- `TransactionStatus`: OPEN, FULFILLED, OVERDUE
+- `ProjectStatus`: CREATED, PLAN_SUBMITTED, PLAN_ACCEPTED, PROJECT_ENDED, REPORT_ACCEPTED
+- `BudgetStatus`: DRAFT, SUBMITTED, ACCEPTED
 - `UnitType`: PATROL, TROOP, GROUP, WORK_GROUP
-
-### Events
-- `Event` — name, dates, organizers (Scouts), units, participants (Persons), linked FinancialProject
 
 ## Financial Plan Design Decisions
 
